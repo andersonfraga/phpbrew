@@ -7,7 +7,7 @@
 # PHPBrew defaults:
 # PHPBREW_HOME: contains the phpbrew config (for users)
 # PHPBREW_ROOT: contains installed php(s) and php source files.
-# PHPBREW_SKIP_INIT: if you need to skip loading config from the init file. 
+# PHPBREW_SKIP_INIT: if you need to skip loading config from the init file.
 # PHPBREW_PHP:  the current php version.
 # PHPBREW_PATH: the bin path of the current php.
 
@@ -68,7 +68,7 @@ function __phpbrew_set_lookup_prefix ()
 
 function phpbrew ()
 {
-    # Check bin/phpbrew if we are in PHPBrew source directory, 
+    # Check bin/phpbrew if we are in PHPBrew source directory,
     # This is only for development
     if [[ -e bin/phpbrew ]] ; then
         BIN='bin/phpbrew'
@@ -89,6 +89,9 @@ function phpbrew ()
 
 
     case $1 in
+        update-apache)
+            __phpbrew_update_apache
+        ;;
         use)
             if [[ -z "$2" ]] ; then
                 if [[ -z "$PHPBREW_PHP" ]]
@@ -339,6 +342,27 @@ function phpbrew ()
     return ${exit_status:-0}
 }
 
+function __phpbrew_update_apache ()
+{
+    local versioncleaned="$(echo $PHPBREW_PHP | sed 's/php\-//g')"
+    local pathapache="/usr/lib/apache2/modules/libphp$versioncleaned.so"
+
+    if [[ -f $pathapache ]]
+    then
+        local ROOTUID="0"
+        local commd="echo \"LoadModule php5_module $pathapache\" > /etc/apache2/mods-available/php5.load"
+
+        if [ "$UID" -ne "$ROOTUID" ]; then
+            echo "Please run with root:"
+            echo $commd
+        else
+            `$commd`
+            echo "Update PHP_MODULE in Apache to $versioncleaned"
+            echo "Please run \`service apache2 reload\` after"
+        fi
+    fi
+}
+
 function __phpbrew_set_path ()
 {
     [[ -n $(alias php 2>/dev/null) ]] && unalias php 2> /dev/null
@@ -364,7 +388,7 @@ function __phpbrew_update_config ()
     . "$PHPBREW_HOME/init"
 }
 
-function __phpbrew_reinit () 
+function __phpbrew_reinit ()
 {
     if [[ -z "$1" ]] ; then
         local _PHP_VERSION=""
